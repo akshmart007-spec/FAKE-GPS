@@ -1,0 +1,55 @@
+name: Build APK
+
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+
+permissions:
+  contents: write
+
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+
+      - name: Unzip project.zip (agar hai)
+        run: if [ -f project.zip ]; then unzip -o project.zip -x ".github/*"; fi
+
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.9
+
+
+      - name: Build release APK
+        run: gradle assembleRelease -PversionCode=${{ github.run_number }} --no-daemon
+
+
+      - name: Rename APK
+        run: cp app/build/outputs/apk/release/app-release.apk FakeGPSLock.apk
+
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: FakeGPSLock-apk
+          path: FakeGPSLock.apk
+
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ github.run_number }}
+          name: Version ${{ github.run_number }}
+          files: FakeGPSLock.apk
